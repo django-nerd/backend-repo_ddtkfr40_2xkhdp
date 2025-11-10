@@ -1,8 +1,13 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List
 
-app = FastAPI()
+from database import create_document
+from schemas import Inquiry
+
+app = FastAPI(title="Uttarakhand Travel Agency API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,11 +19,7 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI Backend!"}
-
-@app.get("/api/hello")
-def hello():
-    return {"message": "Hello from the backend API!"}
+    return {"message": "Uttarakhand Travels Backend is running"}
 
 @app.get("/test")
 def test_database():
@@ -64,6 +65,18 @@ def test_database():
     
     return response
 
+# Models for responses
+class InquiryResponse(BaseModel):
+    id: str
+
+@app.post("/api/inquiries", response_model=InquiryResponse)
+def create_inquiry(inquiry: Inquiry):
+    """Create a travel inquiry lead in the database"""
+    try:
+        inserted_id = create_document("inquiry", inquiry)
+        return {"id": inserted_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
